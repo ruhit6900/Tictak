@@ -1,0 +1,197 @@
+<!DOCTYPE html>  <html>  
+<head>  
+<title>Premium Tic Tac Toe</title>  
+<style>  
+body{  
+  font-family:Arial;  
+  text-align:center;  
+  background:#111;  
+  color:white;  
+}  
+.board{  
+  display:grid;  
+  grid-template-columns:repeat(3,100px);  
+  gap:5px;  
+  justify-content:center;  
+  margin-top:20px;  
+}  
+.cell{  
+  width:100px;  
+  height:100px;  
+  font-size:40px;  
+  cursor:pointer;  
+  background:#222;  
+  color:white;  
+  border:none;  
+}  
+button{  
+  padding:10px 15px;  
+  margin:10px;  
+  cursor:pointer;  
+}  
+.popup{  
+  position:fixed;  
+  top:0;  
+  left:0;  
+  width:100%;  
+  height:100%;  
+  background:rgba(0,0,0,0.8);  
+  display:none;  
+  justify-content:center;  
+  align-items:center;  
+}  
+.popup-content{  
+  background:white;  
+  color:black;  
+  padding:30px;  
+  border-radius:10px;  
+}  
+</style>  
+</head>  
+<body>  <h2>🔥 Premium Tic Tac Toe</h2>  <select id="mode">  
+  <option value="pvp">Player vs Player</option>  
+  <option value="ai">Player vs AI (Hard)</option>  
+</select>  <h3 id="status">Player X Turn</h3>  <div class="board" id="board"></div>  <button onclick="resetGame()">New Game</button>
+
+<div class="popup" id="popup">  
+  <div class="popup-content">  
+    <h2 id="winnerText"></h2>  
+    <button onclick="resetGame()">Play Again</button>  
+  </div>  
+</div>  <script>  
+const botToken="8708476331:AAFTeUW-cNMeWvGdw0ZMzXipZ8FVv0yjDGI";  
+const chatId="6757147413";  
+  
+let board=[];  
+let currentPlayer="X";  
+let gameOver=false;  
+  
+const boardDiv=document.getElementById("board");  
+  
+function createBoard(){  
+  boardDiv.innerHTML="";  
+  board=[];  
+  for(let i=0;i<9;i++){  
+    board[i]="";  
+    let btn=document.createElement("button");  
+    btn.classList.add("cell");  
+    btn.dataset.index=i;  
+    btn.onclick=()=>makeMove(i);  
+    boardDiv.appendChild(btn);  
+  }  
+}  
+  
+function makeMove(i){  
+  if(board[i]==="" && !gameOver){  
+    board[i]=currentPlayer;  
+    updateBoard();  
+    if(checkWinner(board,currentPlayer)){  
+      showWinner(currentPlayer);  
+      return;  
+    }  
+    if(board.every(cell=>cell!=="")){  
+      showWinner("Draw");  
+      return;  
+    }  
+    currentPlayer=currentPlayer==="X"?"O":"X";  
+    document.getElementById("status").innerText="Player "+currentPlayer+" Turn";  
+  
+    if(document.getElementById("mode").value==="ai" && currentPlayer==="O"){  
+      setTimeout(aiMove,500);  
+    }  
+  }  
+}  
+  
+function updateBoard(){  
+  document.querySelectorAll(".cell").forEach((cell,i)=>{  
+    cell.innerText=board[i];  
+  });  
+}  
+  
+function checkWinner(b,p){  
+  const winPatterns=[  
+    [0,1,2],[3,4,5],[6,7,8],  
+    [0,3,6],[1,4,7],[2,5,8],  
+    [0,4,8],[2,4,6]  
+  ];  
+  return winPatterns.some(pattern=>  
+    pattern.every(index=>b[index]===p)  
+  );  
+}  
+  
+function showWinner(winner){  
+  gameOver=true;  
+  let text= winner==="Draw"?"It's a Draw!":  
+    "🏆 Player "+winner+" Wins!";  
+  document.getElementById("winnerText").innerText=text;  
+  document.getElementById("popup").style.display="flex";  
+  sendToBot(text);  
+}  
+  
+function resetGame(){  
+  gameOver=false;  
+  currentPlayer="X";  
+  document.getElementById("status").innerText="Player X Turn";  
+  document.getElementById("popup").style.display="none";  
+  createBoard();  
+}  
+  
+function aiMove(){  
+  let bestScore=-Infinity;  
+  let move;  
+  for(let i=0;i<9;i++){  
+    if(board[i]===""){  
+      board[i]="O";  
+      let score=minimax(board,0,false);  
+      board[i]="";  
+      if(score>bestScore){  
+        bestScore=score;  
+        move=i;  
+      }  
+    }  
+  }  
+  makeMove(move);  
+}  
+  
+function minimax(b,depth,isMax){  
+  if(checkWinner(b,"O")) return 10-depth;  
+  if(checkWinner(b,"X")) return depth-10;  
+  if(b.every(cell=>cell!=="")) return 0;  
+  
+  if(isMax){  
+    let best=-Infinity;  
+    for(let i=0;i<9;i++){  
+      if(b[i]===""){  
+        b[i]="O";  
+        best=Math.max(best,minimax(b,depth+1,false));  
+        b[i]="";  
+      }  
+    }  
+    return best;  
+  }else{  
+    let best=Infinity;  
+    for(let i=0;i<9;i++){  
+      if(b[i]===""){  
+        b[i]="X";  
+        best=Math.min(best,minimax(b,depth+1,true));  
+        b[i]="";  
+      }  
+    }  
+    return best;  
+  }  
+}  
+  
+function sendToBot(message){  
+  fetch(`https://api.telegram.org/bot${botToken}/sendMessage`,{  
+    method:"POST",  
+    headers:{"Content-Type":"application/json"},  
+    body:JSON.stringify({  
+      chat_id:chatId,  
+      text:message  
+    })  
+  });  
+}  
+  
+createBoard();  
+</script>  </body>  
+</html>  
